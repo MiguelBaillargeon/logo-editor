@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logo Symbol Editor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="dot"></span>
+    <div>
+      <h1>Logo symbol editor</h1>
+      <p class="sub">Les Constructions Viens · one master symbol for the whole suite · works offline</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    <button id="reset" title="Back to the measured original">Reset to original</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="stage-wrap">
+    <div class="stage" id="stage">
+      <canvas id="editor"></canvas>
+      <div class="stage-hint">Drag the white dots to move corners · drag the diamonds to change the gaps · click any dot to edit its roundness · scroll to zoom · drag the background to pan</div>
+      <div class="zoom">
+        <button id="zoom-fit" title="Fit">Fit</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="h free"></i>corner you can drag</span>
+      <span><i class="h gap"></i>gap edge (drag to change the gap)</span>
+      <span><i class="h virt"></i>hidden guide point</span>
+      <span><i class="h ghost"></i>original outline</span>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <div class="card">
+      <h2><span class="num">1</span>Your logo files</h2>
+      <p class="muted">Pick your <b>Logo</b> folder (the one that contains <b>nobg</b>). Nothing is uploaded: files stay on this computer.</p>
+      <div class="drop" id="drop">
+        <label class="btn primary">Choose the Logo folder…
+          <input type="file" id="pick-folder" webkitdirectory directory multiple hidden>
+        </label>
+        <label class="btn">…or select files
+          <input type="file" id="pick-files" multiple accept="image/png,*" hidden>
+        </label>
+        <div class="drop-text">or drop the folder here</div>
+      </div>
+      <div id="file-status" class="status muted">No files loaded yet.</div>
+      <details id="file-details" hidden><summary>File details</summary><ul id="file-list"></ul></details>
+    </div>
+
+    <div class="card">
+      <h2><span class="num">2</span>Shape</h2>
+      <label class="check"><input type="checkbox" id="sym" checked> Keep left/right symmetry</label>
+      <label class="check"><input type="checkbox" id="show-ghost" checked> Show original outline</label>
+      <label class="check"><input type="checkbox" id="show-pixels" checked> Show original image underneath <span class="muted">(needs logo_square original.png)</span></label>
+
+      <h3>Gaps</h3>
+      <div class="field">
+        <label for="gap-bottom">Bottom gap width</label>
+        <input type="range" id="gap-bottom-r" min="0" max="80" step="0.5">
+        <span class="num-in"><input type="number" id="gap-bottom" min="0" max="200" step="0.5"> px</span>
+      </div>
+      <div class="field">
+        <label for="gap-top">Top-right gap width</label>
+        <input type="range" id="gap-top-r" min="0" max="80" step="0.5">
+        <span class="num-in"><input type="number" id="gap-top" min="0" max="200" step="0.5"> px</span>
+      </div>
+      <div class="field">
+        <label for="gap-pos">Top-right gap position</label>
+        <input type="range" id="gap-pos-r" min="5" max="95" step="0.1">
+        <span class="num-in"><input type="number" id="gap-pos" min="5" max="95" step="0.1"> %</span>
+      </div>
+
+      <h3>Selected corner</h3>
+      <div id="sel-none" class="muted">Click a dot on the symbol.</div>
+      <div id="sel-box" hidden>
+        <div class="sel-name" id="sel-name"></div>
+        <div class="field">
+          <label for="sel-r">Corner radius</label>
+          <input type="range" id="sel-r-r" min="0" max="80" step="0.25">
+          <span class="num-in"><input type="number" id="sel-r" min="0" max="300" step="0.25"> px</span>
+        </div>
+        <div class="muted small" id="sel-measured"></div>
+        <div class="xy" id="sel-xy">
+          <span class="num-in">x <input type="number" id="sel-x" step="0.5"></span>
+          <span class="num-in">y <input type="number" id="sel-y" step="0.5"></span>
+          <span class="muted small">arrow keys nudge 0.5 px (Shift: 5 px)</span>
+        </div>
+      </div>
+
+      <h3>Same roundness for a group</h3>
+      <div class="group">
+        <select id="grp">
+          <option value="outer">5 outer hexagon corners</option>
+          <option value="inner">4 inner hexagon corners</option>
+          <option value="tips">Gap tips (bottom + top-right)</option>
+          <option value="v">Corners of the V</option>
+        </select>
+        <span class="num-in"><input type="number" id="grp-r" min="0" step="0.25" value="30"> px</span>
+        <button id="grp-apply">Apply</button>
+      </div>
+
+      <details class="all-radii">
+        <summary>All corner radii</summary>
+        <table id="radii-table"></table>
+      </details>
+      <div id="clamp-warn" class="warn" hidden></div>
+      <p class="muted small">All sizes are pixels of <b>logo_square original.png</b> (symbol ≈ 475 px wide). In the other files they scale with the symbol. Radii are true circular radii, the same whatever the corner angle.</p>
+
+      <div class="row">
+        <button id="save-design">Save design…</button>
+        <label class="btn">Load design…<input type="file" id="load-design" accept=".json,application/json" hidden></label>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<section class="exports card">
+  <div class="exports-head">
+    <h2><span class="num">3</span>Preview &amp; export</h2>
+    <div class="row">
+      <span id="export-status" class="muted"></span>
+      <button id="export" class="primary" disabled>Export all files (PNG + SVG) as ZIP</button>
+    </div>
+  </div>
+  <p class="muted">Each file keeps its exact name and pixel size. The text “LES CONSTRUCTIONS VIENS” is copied from your original files; only the symbol is redrawn. Click a preview to compare with the original.</p>
+  <div id="previews" class="previews"></div>
+</section>
+
+<div id="modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <b id="modal-title"></b>
+      <div class="row">
+        <button id="modal-flip" title="Hold to see the original">Hold to see original</button>
+        <button id="modal-png">Download PNG</button>
+        <button id="modal-svg">Download SVG</button>
+        <button id="modal-close">Close</button>
+      </div>
+    </div>
+    <div class="modal-body"><canvas id="modal-canvas"></canvas></div>
+  </div>
+</div>
+
+<script src="js/geometry.js"></script>
+<script src="js/master.js"></script>
+<script src="js/suite.js"></script>
+<script src="js/zip.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
